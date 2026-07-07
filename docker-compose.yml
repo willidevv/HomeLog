@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  react-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: react_tailwind_dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app            # Sinkronisasi folder lokal dengan folder di container (Bikin HMR Jalan)
+      - /app/node_modules # Anonymous volume agar node_modules di container tidak tertimpa oleh lokal
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Tambahan keamanan untuk memastikan watcher file aktif
