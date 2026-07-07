@@ -1,143 +1,22 @@
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from './assets/vite.svg'
-// import heroImg from './assets/hero.png'
-// import './App.css'
-
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <section id="center">
-//         <div className="hero">
-//           <img src={heroImg} className="base" width="170" height="179" alt="" />
-//           <img src={reactLogo} className="framework" alt="React logo" />
-//           <img src={viteLogo} className="vite" alt="Vite logo" />
-//         </div>
-//         <div>
-//           <h1>Get started</h1>
-//           <p>
-//             Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-//           </p>
-//         </div>
-//         <button
-//           type="button"
-//           className="counter"
-//           onClick={() => setCount((count) => count + 1)}
-//         >
-//           Count is {count}
-//         </button>
-//       </section>
-
-//       <div className="ticks"></div>
-
-//       <section id="next-steps">
-//         <div id="docs">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#documentation-icon"></use>
-//           </svg>
-//           <h2>Documentation</h2>
-//           <p>Your questions, answered</p>
-//           <ul>
-//             <li>
-//               <a href="https://vite.dev/" target="_blank">
-//                 <img className="logo" src={viteLogo} alt="" />
-//                 Explore Vite
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://react.dev/" target="_blank">
-//                 <img className="button-icon" src={reactLogo} alt="" />
-//                 Learn more
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//         <div id="social">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#social-icon"></use>
-//           </svg>
-//           <h2>Connect with us</h2>
-//           <p>Join the Vite community</p>
-//           <ul>
-//             <li>
-//               <a href="https://github.com/vitejs/vite" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#github-icon"></use>
-//                 </svg>
-//                 GitHub
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://chat.vite.dev/" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#discord-icon"></use>
-//                 </svg>
-//                 Discord
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://x.com/vite_js" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#x-icon"></use>
-//                 </svg>
-//                 X.com
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://bsky.app/profile/vite.dev" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#bluesky-icon"></use>
-//                 </svg>
-//                 Bluesky
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//       </section>
-
-//       <div className="ticks"></div>
-//       <section id="spacer"></section>
-//     </>
-//   )
-// }
-
-// export default App
 import React, { useState, useEffect, useMemo } from 'react';
-import { signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 // Konfigurasi & Layout global
-import { auth, db, appId } from './config/firebase';
+import { db, appId } from './config/firebase';
 import Header from './components/layout/Header';
 import ModalForm from './components/ui/ModalForm';
 
-// Import Views Terpisah
+// Import Auth Context & Views Terpisah
+import { AuthProvider, useAuth } from './context/AuthContext';
+import LoginView from './components/views/loginView';
 import DashboardView from './components/views/DashboardView';
 import PlanView from './components/views/PlanView';
 import RoomView from './components/views/RoomView';
 import ItemDetailView from './components/views/ItemDetailView';
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+function MainApp() {
+  // Mengambil state dan fungsi autentikasi global dari AuthContext
+  const { user, logout, loading } = useAuth();
 
   // Data States
   const [homePlans, setHomePlans] = useState([]);
@@ -153,31 +32,11 @@ export default function App() {
   // Modal States
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, data: null });
 
-  // --- AUTHENTICATION ---
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (error) {
-        console.error("Auth error:", error);
-      }
-    };
-    initAuth();
-
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
   // --- DATA FETCHING (Real-Time Listener) ---
   useEffect(() => {
+    // Hanya lakukan fetching jika user telah berhasil login
     if (!user) return;
+    
     const basePath = ['artifacts', appId, 'users', user.uid];
 
     const unsubPlans = onSnapshot(collection(db, ...basePath, 'homePlans'), (snap) => setHomePlans(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt)));
@@ -251,7 +110,20 @@ export default function App() {
   const openModal = (type, data = null) => setModalConfig({ isOpen: true, type, data });
   const closeModal = () => setModalConfig({ isOpen: false, type: null, data: null });
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><p className="text-slate-500 animate-pulse">Memuat HomeLog...</p></div>;
+  // --- PROTEKSI RUTE DAN AUTENTIKASI ---
+  // 1. Tampilkan indikator memuat jika status autentikasi masih dicek oleh Firebase Auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-500 animate-pulse font-medium">Memuat Autentikasi HomeLog...</p>
+      </div>
+    );
+  }
+
+  // 2. Jika tidak ada sesi pengguna yang aktif, tampilkan form login
+  if (!user) {
+    return <LoginView />;
+  }
 
   // --- ROUTING / CONDITIONAL VIEW RENDER ---
   const renderActiveView = () => {
@@ -294,6 +166,22 @@ export default function App() {
         setActivePlanId={setActivePlanId} setActiveRoomId={setActiveRoomId} setActiveItemId={setActiveItemId}
       />
 
+      {/* Bar Menu Pengguna & Tombol Keluar (Logout) */}
+      <div className="bg-white border-b border-slate-200 py-2.5 shadow-xs">
+        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center text-xs text-slate-500">
+          <div>
+            <span>Masuk sebagai: </span>
+            <span className="font-semibold text-slate-700">{user.email}</span>
+          </div>
+          <button 
+            onClick={logout} 
+            className="text-red-500 hover:text-red-700 font-bold transition-colors cursor-pointer focus:outline-none"
+          >
+            Keluar Aplikasi
+          </button>
+        </div>
+      </div>
+
       <main className="max-w-6xl mx-auto px-4 py-8 pb-24">
         {renderActiveView()}
       </main>
@@ -302,5 +190,14 @@ export default function App() {
         modalConfig={modalConfig} closeModal={closeModal} handleSaveData={handleSaveData} 
       />
     </div>
+  );
+}
+
+// Ekspor default membungkus MainApp dengan AuthProvider global agar context bekerja dengan baik
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
