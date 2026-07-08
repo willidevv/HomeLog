@@ -166,22 +166,6 @@ function MainApp() {
         setActivePlanId={setActivePlanId} setActiveRoomId={setActiveRoomId} setActiveItemId={setActiveItemId}
       />
 
-      {/* Bar Menu Pengguna & Tombol Keluar (Logout) */}
-      <div className="bg-white border-b border-slate-200 py-2.5 shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center text-xs text-slate-500">
-          <div>
-            <span>Masuk sebagai: </span>
-            <span className="font-semibold text-slate-700">{user.email}</span>
-          </div>
-          <button 
-            onClick={logout} 
-            className="text-red-500 hover:text-red-700 font-bold transition-colors cursor-pointer focus:outline-none"
-          >
-            Keluar Aplikasi
-          </button>
-        </div>
-      </div>
-
       <main className="max-w-6xl mx-auto px-4 py-8 pb-24">
         {renderActiveView()}
       </main>
