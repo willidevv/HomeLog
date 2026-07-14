@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 // Mengimpor auth dengan ekstensi file eksplisit untuk membantu resolusi modul di lingkungan bundler
-import { auth } from '../config/firebase.js';
+import { auth } from '../config/Firebase.js';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 

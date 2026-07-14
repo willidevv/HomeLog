@@ -2,17 +2,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 // Konfigurasi & Layout global
-import { db, appId } from './config/firebase';
+import { db, appId } from './config/Firebase';
 import Header from './components/layout/Header';
-import ModalForm from './components/ui/ModalForm';
+import ModalForm from './components/common/Modal/ModalForm';
 
 // Import Auth Context & Views Terpisah
 import { AuthProvider, useAuth } from './context/AuthContext';
-import LoginView from './components/views/loginView';
-import DashboardView from './components/views/DashboardView';
-import PlanView from './components/views/PlanView';
-import RoomView from './components/views/RoomView';
-import ItemDetailView from './components/views/ItemDetailView';
+import LoginView from './pages/Login/LoginPage';
+import DashboardView from './pages/Dashboard/DashboardPage';
+import PlanView from './pages/Plan/PlanPage';
+import RoomView from './pages/Room/RoomPage';
+import ItemDetailView from './pages/ItemDetail/ItemDetailPage';
 
 function MainApp() {
   // Mengambil state dan fungsi autentikasi global dari AuthContext
