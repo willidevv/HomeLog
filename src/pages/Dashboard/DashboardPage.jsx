@@ -2,7 +2,8 @@ import React from 'react';
 import { Plus, Map, Edit2, Trash2 } from 'lucide-react';
 
 export default function DashboardView({ homePlans, rooms, openModal, handleDelete, setActivePlanId }) { 
-  return ( 
+  return (
+     
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500"> 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"> 
         <div> 
