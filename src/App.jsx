@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { db, appId } from './config/Firebase';
 import Header from './components/layout/Header';
 import ModalForm from './components/common/Modal/ModalForm';
@@ -23,6 +23,15 @@ function MainApp() {
 
   // Kembalikan fungsi openModal agar tidak error di komponen anak
   const openModal = (type, data = null) => setModalConfig({ isOpen: true, type, data });
+
+  // Reset view/route states when user logs out
+  useEffect(() => {
+    if (!user) {
+      setActivePlanId(null);
+      setActiveRoomId(null);
+      setActiveItemId(null);
+    }
+  }, [user]);
 
   const activePlan = useMemo(() => homePlans.find(p => p.id === activePlanId), [homePlans, activePlanId]);
   const activeRoom = useMemo(() => rooms.find(r => r.id === activeRoomId), [rooms, activeRoomId]);
