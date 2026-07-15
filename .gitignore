@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+.env
+catatan
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
