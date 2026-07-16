@@ -38,7 +38,7 @@ function MainApp() {
   const activeItem = useMemo(() => items.find(i => i.id === activeItemId), [items, activeItemId]);
 
   if (authLoading || (user && dataLoading)) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><p className="text-slate-500 animate-pulse font-medium">Memuat sistem HomeLog...</p></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy-900 via-navy-900 to-cream-50"><p className="text-gold-400 animate-pulse font-medium">Memuat sistem HomeLog...</p></div>;
   }
   if (!user) return <LoginView />;
 
@@ -51,9 +51,9 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-navy-900 via-navy-900 to-cream-50 font-sans text-cream-50">
       <Header user={user} activePlan={activePlan} activeRoom={activeRoom} activeItem={activeItem} setActivePlanId={setActivePlanId} setActiveRoomId={setActiveRoomId} setActiveItemId={setActiveItemId} />
-      <main className="max-w-6xl mx-auto px-4 py-8 pb-24">{renderActiveView()}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-24">{renderActiveView()}</main>
       <ModalForm modalConfig={modalConfig} closeModal={() => setModalConfig({ isOpen: false, type: null, data: null })} activeIds={{ activePlanId, activeRoomId, activeItemId }} />
     </div>
   );

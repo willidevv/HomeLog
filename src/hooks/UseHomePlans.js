@@ -42,7 +42,6 @@ export function useHomePlans(user, appId, db) {
           const timeA = a.createdAt?.seconds || a.createdAt?.getTime?.() || a.createdAt || 0;
           const timeB = b.createdAt?.seconds || b.createdAt?.getTime?.() || b.createdAt || 0;
           return timeB - timeA; // Urutan DESC (terbaru dahulu)
-          console.log(plans);
         });
     };
 

@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-navy-800/30;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    @apply w-0;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-transparent;
+  }
+}
