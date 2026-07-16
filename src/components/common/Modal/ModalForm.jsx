@@ -1,37 +1,50 @@
 import React from 'react';
-
-// 1. Import Config & Context (Perhatikan path ../../../ karena posisi file di dalam folder yang dalam)
 import { db, appId } from '../../../config/Firebase';
 import { useAuth } from '../../../context/AuthContext';
+import { useModal } from '../../../contexts/ModalContext';
+import { useNavigation } from '../../../contexts/NavigationContext';
 
-// 2. Import CRUD Services
+// CRUD Services
 import { createPlan, updatePlan } from '../../../services/PlanService';
 import { createRoom, updateRoom } from '../../../services/RoomService';
 import { createItem, updateItem } from '../../../services/ItemService';
 import { createMaintenanceRecord, updateMaintenanceRecord } from '../../../services/MaintenanceService';
 
-// Perhatikan prop handleSaveData Dihapus, diganti dengan activeIds
-export default function ModalForm({ modalConfig, closeModal, activeIds }) {
+/**
+ * ModalForm
+ *
+ * Tanggung jawab:
+ *   - Merender form dialog untuk create/edit semua entity
+ *   - Mengambil state modal dari ModalContext (tidak ada props modal)
+ *   - Mengambil active IDs dari NavigationContext untuk relasi data saat create
+ *   - Memanggil service yang sesuai berdasarkan modalConfig.type
+ *
+ * Yang TIDAK boleh ada di sini:
+ *   - Navigation logic
+ *   - Delete operations (ada di DataContext / handleDelete)
+ *   - State lokal selain yang diperlukan form
+ */
+export default function ModalForm() {
   const { user } = useAuth();
+  const { modalConfig, closeModal } = useModal();
+  const { activePlanId, activeRoomId, activeItemId } = useNavigation();
 
   if (!modalConfig.isOpen) return null;
 
-  // 3. Logika handleSaveData dipindahkan ke sini
   const handleFormSubmit = (e) => {
     e.preventDefault();
     if (!user) return;
 
     const fd = new FormData(e.target);
     const formData = Object.fromEntries(fd.entries());
-    
+
     const authConfig = { appId, userId: user.uid };
     const isEditMode = !!modalConfig.data?.id;
     const docId = modalConfig.data?.id;
 
-    // Menutup modal segera tanpa menunggu respon database
+    // Tutup modal segera — UI terasa responsif, operasi jalan di background
     closeModal();
 
-    // Menjalankan proses penyimpanan di background
     const savePromise = (async () => {
       switch (modalConfig.type) {
         case 'plan':
@@ -40,80 +53,152 @@ export default function ModalForm({ modalConfig, closeModal, activeIds }) {
           break;
         case 'room':
           if (isEditMode) await updateRoom(db, authConfig, docId, formData);
-          else await createRoom(db, authConfig, { ...formData, homePlanId: activeIds.activePlanId });
+          else await createRoom(db, authConfig, { ...formData, homePlanId: activePlanId });
           break;
         case 'item':
           if (isEditMode) await updateItem(db, authConfig, docId, formData);
-          else await createItem(db, authConfig, { ...formData, roomId: activeIds.activeRoomId });
+          else await createItem(db, authConfig, { ...formData, roomId: activeRoomId });
           break;
         case 'maintenance':
           if (isEditMode) await updateMaintenanceRecord(db, authConfig, docId, formData);
-          else await createMaintenanceRecord(db, authConfig, { ...formData, itemId: activeIds.activeItemId });
+          else await createMaintenanceRecord(db, authConfig, { ...formData, itemId: activeItemId });
           break;
       }
     })();
 
     savePromise.catch((error) => {
-      console.error("Gagal menyimpan data:", error);
+      console.error('Gagal menyimpan data:', error);
       alert(`Gagal menyimpan data: ${error.message}`);
     });
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-800">
+    <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div
+        className="bg-navy-900/80 backdrop-blur-xl border border-navy-700/50 rounded-2xl w-full max-w-md shadow-2xl shadow-navy-900/50 overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="px-6 py-4 border-b border-navy-700/30 flex justify-between items-center bg-gradient-to-r from-navy-900 to-navy-800/50">
+          <h3 className="text-lg font-bold text-cream-50">
             {modalConfig.data ? 'Edit ' : 'Tambah '}
             {modalConfig.type === 'plan' && 'Denah Rumah'}
             {modalConfig.type === 'room' && 'Ruangan'}
             {modalConfig.type === 'item' && 'Barang'}
             {modalConfig.type === 'maintenance' && 'Riwayat Perawatan'}
           </h3>
-          <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 p-1">✕</button>
+          <button
+            onClick={closeModal}
+            className="text-navy-300 hover:text-cream-50 hover:bg-cream-500/10 p-1.5 rounded-lg transition-colors"
+          >
+            ✕
+          </button>
         </div>
-        
-        {/* Ubah onSubmit untuk memanggil handleFormSubmit lokal */}
+
+        {/* Modal Form */}
         <form onSubmit={handleFormSubmit} className="p-6">
           <div className="space-y-4">
+            {/* Field: Nama — untuk plan, room, item */}
             {(modalConfig.type === 'plan' || modalConfig.type === 'room' || modalConfig.type === 'item') && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nama <span className="text-red-500">*</span></label>
-                <input required name="name" defaultValue={modalConfig.data?.name} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Masukkan nama..." />
+                <label className="block text-sm font-semibold text-cream-50 mb-1.5">
+                  Nama <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  required
+                  name="name"
+                  defaultValue={modalConfig.data?.name}
+                  className="w-full border border-navy-600/30 rounded-xl px-4 py-3 text-cream-50 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 outline-none transition-all bg-navy-800/30 placeholder-navy-400"
+                  placeholder="Masukkan nama..."
+                />
               </div>
             )}
+
+            {/* Field: Deskripsi — untuk room, item */}
             {(modalConfig.type === 'room' || modalConfig.type === 'item') && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Deskripsi (Opsional)</label>
-                <textarea name="description" defaultValue={modalConfig.data?.description} rows={2} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Catatan tambahan..."></textarea>
+                <label className="block text-sm font-semibold text-cream-50 mb-1.5">
+                  Deskripsi (Opsional)
+                </label>
+                <textarea
+                  name="description"
+                  defaultValue={modalConfig.data?.description}
+                  rows={2}
+                  className="w-full border border-navy-600/30 rounded-xl px-4 py-3 text-cream-50 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 outline-none transition-all bg-navy-800/30 placeholder-navy-400"
+                  placeholder="Catatan tambahan..."
+                />
               </div>
             )}
+
+            {/* Field: Tanggal Pembelian — untuk item */}
             {modalConfig.type === 'item' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal Pembelian (Opsional)</label>
-                <input type="date" name="purchaseDate" defaultValue={modalConfig.data?.purchaseDate} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <label className="block text-sm font-semibold text-cream-50 mb-1.5">
+                  Tanggal Pembelian (Opsional)
+                </label>
+                <input
+                  type="date"
+                  name="purchaseDate"
+                  defaultValue={modalConfig.data?.purchaseDate}
+                  className="w-full border border-navy-600/30 rounded-xl px-4 py-3 text-cream-50 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 outline-none transition-all bg-navy-800/30 placeholder-navy-400"
+                />
               </div>
             )}
+
+            {/* Fields: Maintenance */}
             {modalConfig.type === 'maintenance' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Jenis Perawatan <span className="text-red-500">*</span></label>
-                  <input required name="maintenanceType" defaultValue={modalConfig.data?.maintenanceType} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Misal: Servis AC, Ganti Filter..." />
+                  <label className="block text-sm font-semibold text-cream-50 mb-1.5">
+                    Jenis Perawatan <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    required
+                    name="maintenanceType"
+                    defaultValue={modalConfig.data?.maintenanceType}
+                    className="w-full border border-navy-600/30 rounded-xl px-4 py-3 text-cream-50 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 outline-none transition-all bg-navy-800/30 placeholder-navy-400"
+                    placeholder="Misal: Servis AC, Ganti Filter..."
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal Perawatan <span className="text-red-500">*</span></label>
-                  <input type="date" required name="maintenanceDate" defaultValue={modalConfig.data?.maintenanceDate} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <label className="block text-sm font-semibold text-cream-50 mb-1.5">
+                    Tanggal Perawatan <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    name="maintenanceDate"
+                    defaultValue={modalConfig.data?.maintenanceDate}
+                    className="w-full border border-navy-600/30 rounded-xl px-4 py-3 text-cream-50 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 outline-none transition-all bg-navy-800/30 placeholder-navy-400"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Catatan</label>
-                  <textarea name="notes" defaultValue={modalConfig.data?.notes} rows={3} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Detail perawatan..."></textarea>
+                  <label className="block text-sm font-semibold text-cream-50 mb-1.5">Catatan</label>
+                  <textarea
+                    name="notes"
+                    defaultValue={modalConfig.data?.notes}
+                    rows={3}
+                    className="w-full border border-navy-600/30 rounded-xl px-4 py-3 text-cream-50 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 outline-none transition-all bg-navy-800/30 placeholder-navy-400"
+                    placeholder="Detail perawatan..."
+                  />
                 </div>
               </>
             )}
           </div>
-          <div className="mt-6 flex justify-end gap-3">
-            <button type="button" onClick={closeModal} className="px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
-            <button type="submit" className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+
+          {/* Form Actions */}
+          <div className="mt-8 flex justify-end gap-3 bg-navy-950/30 rounded-xl p-4 -mx-6 -mb-6">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="px-5 py-3 text-navy-300 hover:text-cream-50 bg-navy-800/30 hover:bg-navy-700/50 border border-navy-700/30 hover:border-navy-600 rounded-xl transition-all duration-200 font-medium"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-3 text-white bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 rounded-xl transition-all duration-300 shadow-lg shadow-gold-500/25 font-medium hover:shadow-gold-500/35 hover:-translate-y-0.5 active:translate-y-0"
+            >
               Simpan Data
             </button>
           </div>
